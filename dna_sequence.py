@@ -14,7 +14,7 @@
 # HELLO: this is a test
 #
 # # Version: 		V1.0
-# Owner:		Allyn Hunt
+# Owner:			Allyn Hunt
 #############################################################################################################################################
 import sys, os, re, errno, gzip
 import argparse, time
