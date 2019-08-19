@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 # #############################################################################################################################################
-# Introduction: 	This script will parse a file and do some stuff.
+# Introduction: 	This script will parse a file with nucleotide sequence data and print certain sequences.
+#					Sequence is defined by a given start codon and a list of possible end codons.
 #
 # Usage: 			See help file for a list of usage examples:
-# Syntax: 			python script_example.py --input input.txt
+# Syntax: 			py -3 dna_sequence.py --input "PIK3CA Nucleotide Sequence.txt" --debug
 #
 # Output:
-#
-# > script_example.py -i README.md --debug
-#	-I- Debug mode is on.
-# 		-I- Input file: README.md
-#		-I- Output file: /path/to/dir/output.txt
-# HELLO: this is a test
+# > py -3 dna_sequence.py --input "PIK3CA Nucleotide Sequence.txt" --debug
+#   -I- Debug mode is on.
+#   -I- Input file: PIK3CA Nucleotide Sequence.txt
+#   -I- Output file: C:\Users\AllynH\Code\Git\dna_sequence\output[.txt|.csv]
+#         -I- Found 632 codons
+#         -I- Start codon: ATG Stop codons: ATT ATC ACT
+# -I- Run time: 1.760136365890503 seconds
 #
 # # Version: 		V1.0
 # Owner:			Allyn Hunt
@@ -40,7 +42,7 @@ parser.add_argument("-i", "--input",
 					help="Input file.")
 
 parser.add_argument("-o", "--output",
-					help="Output file.")
+					help="Output file - will write as .txt and .csv (don't add a file extension).")
 
 parser.add_argument("-f", "--find",
 					help="Find a given codon.")
@@ -65,7 +67,7 @@ def parse_arguments():
 	if args.output:
 		FILE_LIST['OUTPUT_FILE'] = args.output
 	else:
-		FILE_LIST['OUTPUT_FILE'] = os.path.join(CWD, "output.txt")
+		FILE_LIST['OUTPUT_FILE'] = os.path.join(CWD, "output")
 
 	if args.find:
 		FILE_LIST['FIND_CODON'] = int(args.find)
@@ -117,13 +119,13 @@ def find_codon(chunked_sequence, find_codon):
 	Take the chunked dna_sequence and find the start codon:
 	"""
 
-	codon_list = []
+	codon_sequence = []
 
 	for i, codon in enumerate(chunked_sequence):
 		if codon == find_codon:
-			codon_list.append((codon, i))
+			codon_sequence.append((codon, i))
 
-	print("Found", len(codon_list), "codons")
+	print("\t-I- Found", len(codon_sequence), "codons")
 
 	return True
 
@@ -144,7 +146,7 @@ def find_start_stop_codon(chunked_sequence, start_codon, stop_codon):
 
 	found_seq = False
 
-	print(start_codon, stop_codon)
+	print("\t-I- Start codon:", start_codon, "Stop codons:", " ".join(stop_codon))
 
 	for i, codon in enumerate(chunked_sequence):
 		# print(codon)
@@ -159,7 +161,7 @@ def find_start_stop_codon(chunked_sequence, start_codon, stop_codon):
 		if codon in stop_codon and found_seq:
 			temp_dict = {}
 			# print("Current codon:", codon, "stop_codons:", stop_codon)
-			print("Sequence length is", len(current_sequence), "codons")
+			# print("Sequence length is", len(current_sequence), "codons")
 			# sequence_list.append(current_sequence)
 			temp_dict['START']		= start_index
 			temp_dict['STOP']		= i
@@ -170,7 +172,7 @@ def find_start_stop_codon(chunked_sequence, start_codon, stop_codon):
 
 	# print("Found", len(sequence_list), "matching sequences!")
 
-	print(sequence_list)
+	# print(sequence_list)
 
 	return sequence_list
 
@@ -184,7 +186,6 @@ def find_specific_codon(chunked_sequence, find_codon):
 	Take the chunked dna_sequence and find the start codon:
 	"""
 	print("Finding codon:", chunked_sequence[int(find_codon)])
-
 
 	return True
 
@@ -200,20 +201,48 @@ def parse_sequence(dna_sequence):
 	chunked_sequence = []
 	chunk_size = 3
 
-
 	chunked_sequence = [dna_sequence[i:i+chunk_size] for i in range(0, len(dna_sequence), chunk_size)]
-
-	# print(chunked_sequence)
-
-	print(len(chunked_sequence))
 
 	return chunked_sequence
 
 #############################################################################################################################################
 
+#############################################################################################################################################
+# Parse input file:
+#############################################################################################################################################
+def write_file(file_name, chunked_sequence, codon_sequence, file_type):
+	"""
+	Write the chunked codons into a file.
+	If a sequence of codons is detected - it will print out the start codon index, stop codon index, the sequence length and the full sequence.
+	"""
+
+	if file_type == "txt":
+		seperator = " "
+		file_name = FILE_LIST['OUTPUT_FILE'] + ".txt"
+	else:
+		seperator = ","
+		file_name = FILE_LIST['OUTPUT_FILE'] + ".csv"
+
+	file_input = []
+
+	for codon_chunk_index, codon_chunk in enumerate(chunked_sequence):
+		for codon_index, codon in enumerate(codon_sequence):
+			if codon_chunk_index == codon["START"]:
+				seq_string = " ".join(codon['SEQUENCE'])
+				message = "\nStart: {} Stop: {} Length: {} Sequence:{}{}\n".format(codon['START'], codon['STOP'], len(codon['SEQUENCE']), seperator, seq_string)
+				file_input.append(message)
+		file_input.append(codon_chunk + seperator)
+
+	with open(file_name, 'wt') as output:
+		for item in file_input:
+			output.write(item)
+
+	return True
 
 #############################################################################################################################################
-# Set user defined input options:
+
+#############################################################################################################################################
+# Function for main program:
 #############################################################################################################################################
 def main_flow():
 	if args.debug:
@@ -223,7 +252,7 @@ def main_flow():
 
 	if args.debug is True:
 		print("  -I- Input file:", FILE_LIST['INPUT_FILE'])
-		print("  -I- Output file:", FILE_LIST['OUTPUT_FILE'])
+		print("  -I- Output file:", FILE_LIST['OUTPUT_FILE'] + "[.txt|.csv]")
 
 	start_codon = "ATG"
 	stop_codon = ["ATT", "ATC", "ACT"]
@@ -231,11 +260,14 @@ def main_flow():
 	dna_sequence		= parse_file(FILE_LIST['INPUT_FILE'])
 	chunked_sequence	= parse_sequence(dna_sequence)
 	find_codon_result	= find_codon(chunked_sequence, start_codon)
-	codon_list 			= find_start_stop_codon(chunked_sequence, start_codon, stop_codon)
+	codon_sequence 		= find_start_stop_codon(chunked_sequence, start_codon, stop_codon)
 
-	for i, c in enumerate(codon_list):
-		print("Sequence:", i, "contains:", len(c['SEQUENCE']), "codons.")
-		print("start:", c['START'], "Stop:", c['STOP'], "Sequence:", c['SEQUENCE'])
+	# for i, c in enumerate(codon_sequence):
+	# 	print("Sequence:", i, "contains:", len(c['SEQUENCE']), "codons.")
+	# 	print("start:", c['START'], "Stop:", c['STOP'], "Sequence:", c['SEQUENCE'])
+
+	write_file(FILE_LIST['OUTPUT_FILE'], chunked_sequence, codon_sequence, "txt")
+	write_file(FILE_LIST['OUTPUT_FILE'], chunked_sequence, codon_sequence, "csv")
 
 	if args.find:
 		print("Finding:", args.find)
@@ -246,7 +278,11 @@ def main_flow():
 		print("-I- Run time:", end_time, "seconds")
 
 	return True
+#############################################################################################################################################
 
+#############################################################################################################################################
+# Main program:
+#############################################################################################################################################
 if __name__ == "__main__":
 	""" Run the main flow: """
 
