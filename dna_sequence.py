@@ -27,9 +27,10 @@ from datetime import datetime
 # Initialise global definitions:
 #############################################################################################################################################
 FILE_LIST = {
-	"INPUT_FILE"	: "",
-	"OUTPUT_FILE"	: "",
-	"FIND_CODON"	: ""
+	"INPUT_FILE"		: "",
+	"OUTPUT_FILE"		: "",
+	"FIND_CODON"		: "",
+	"CODON_SEQUENCE"	: ""
 }
 CWD = os.getcwd()
 
@@ -44,7 +45,10 @@ parser.add_argument("-i", "--input",
 parser.add_argument("-o", "--output",
 					help="Output file - will write as .txt and .csv (don't add a file extension).")
 
-parser.add_argument("-f", "--find",
+parser.add_argument("-f", "--find-codon",
+					help="Find a value from a given codon.")
+
+parser.add_argument("-si", "--sequence-index",
 					help="Find a given codon.")
 
 parser.add_argument("-d", "--debug", action="store_true", default=False,
@@ -69,8 +73,11 @@ def parse_arguments():
 	else:
 		FILE_LIST['OUTPUT_FILE'] = os.path.join(CWD, "output")
 
-	if args.find:
-		FILE_LIST['FIND_CODON'] = int(args.find)
+	if args.find_codon:
+		FILE_LIST['FIND_CODON'] = int(args.find_codon)
+
+	if args.sequence_index:
+		FILE_LIST['CODON_SEQUENCE'] = int(args.sequence_index)
 
 	# Print debug information:
 	if args.debug is True:
@@ -126,6 +133,28 @@ def find_codon(chunked_sequence, find_codon):
 			codon_sequence.append((codon, i))
 
 	print("\t-I- Found", len(codon_sequence), "codons")
+
+	return True
+
+#############################################################################################################################################
+
+#############################################################################################################################################
+# Parse DNA sequence into segments of 3 characters:
+#############################################################################################################################################
+def find_codon_with_index(chunked_sequence, find_codon, requested_sequence, codon_sequence):
+	"""
+	Take the chunked dna_sequence and find the start codon:
+	"""
+
+	# Sequence start + codon_index - 1, because we want the sequence start codon to be the first value:
+	codon_index = (int(codon_sequence[requested_sequence]["START"]) + int(find_codon) -1)
+
+	print("Here is the sequence:", codon_sequence[requested_sequence])
+	print("Here is the start codon:", codon_sequence[requested_sequence]["START"])
+	print("Here is the desired codons index:", int(codon_sequence[requested_sequence]["START"]) + int(find_codon) -1)
+
+	print("Here is the codon", find_codon, "places after sequence", requested_sequence)
+	find_specific_codon(chunked_sequence, codon_index)
 
 	return True
 
@@ -210,18 +239,18 @@ def parse_sequence(dna_sequence):
 #############################################################################################################################################
 # Parse input file:
 #############################################################################################################################################
-def write_file(file_name, chunked_sequence, codon_sequence, file_type):
+def write_annotated_file(file_name, chunked_sequence, codon_sequence, file_type):
 	"""
 	Write the chunked codons into a file.
 	If a sequence of codons is detected - it will print out the start codon index, stop codon index, the sequence length and the full sequence.
 	"""
 
 	if file_type == "txt":
-		seperator = " "
-		file_name = FILE_LIST['OUTPUT_FILE'] + ".txt"
+		separator = " "
+		file_name = FILE_LIST['OUTPUT_FILE'] + "_annotated" + ".txt"
 	else:
-		seperator = ","
-		file_name = FILE_LIST['OUTPUT_FILE'] + ".csv"
+		separator = ","
+		file_name = FILE_LIST['OUTPUT_FILE'] + "_annotated" + ".csv"
 
 	file_input = []
 
@@ -229,13 +258,33 @@ def write_file(file_name, chunked_sequence, codon_sequence, file_type):
 		for codon_index, codon in enumerate(codon_sequence):
 			if codon_chunk_index == codon["START"]:
 				seq_string = " ".join(codon['SEQUENCE'])
-				message = "\nStart: {} Stop: {} Length: {} Sequence:{}{}\n".format(codon['START'], codon['STOP'], len(codon['SEQUENCE']), seperator, seq_string)
+				message = "\nStart: {} Stop: {} Length: {} Sequence:{}{}\n".format(codon['START'], codon['STOP'], len(codon['SEQUENCE']), separator, seq_string)
 				file_input.append(message)
-		file_input.append(codon_chunk + seperator)
+		file_input.append(codon_chunk + separator)
 
 	with open(file_name, 'wt') as output:
 		for item in file_input:
 			output.write(item)
+
+	return True
+
+#############################################################################################################################################
+
+#############################################################################################################################################
+# Parse input file:
+#############################################################################################################################################
+def write_file(file_name, chunked_sequence):
+	"""
+	Write the chunked codons into a .CSV file.
+	If a sequence of codons is detected - it will print out the start codon index, stop codon index, the sequence length and the full sequence.
+	"""
+
+	separator = ","
+	file_name = FILE_LIST['OUTPUT_FILE'] + ".csv"
+
+	with open(file_name, 'wt') as output:
+		for item in chunked_sequence:
+			output.write(item + separator)
 
 	return True
 
@@ -266,12 +315,14 @@ def main_flow():
 	# 	print("Sequence:", i, "contains:", len(c['SEQUENCE']), "codons.")
 	# 	print("start:", c['START'], "Stop:", c['STOP'], "Sequence:", c['SEQUENCE'])
 
-	write_file(FILE_LIST['OUTPUT_FILE'], chunked_sequence, codon_sequence, "txt")
-	write_file(FILE_LIST['OUTPUT_FILE'], chunked_sequence, codon_sequence, "csv")
+	write_file(FILE_LIST['OUTPUT_FILE'], chunked_sequence)
+	write_annotated_file(FILE_LIST['OUTPUT_FILE'], chunked_sequence, codon_sequence, "txt")
+	write_annotated_file(FILE_LIST['OUTPUT_FILE'], chunked_sequence, codon_sequence, "csv")
 
-	if args.find:
-		print("Finding:", args.find)
-		find_specific_codon(chunked_sequence, FILE_LIST['FIND_CODON'])
+	if args.find_codon:
+		# print("Finding:", args.find_codon)
+		# find_specific_codon(chunked_sequence, FILE_LIST['FIND_CODON'])
+		find_codon_with_index(chunked_sequence, FILE_LIST['FIND_CODON'], FILE_LIST['CODON_SEQUENCE'], codon_sequence)
 
 	if args.debug:
 		end_time = time.time() - start_time
