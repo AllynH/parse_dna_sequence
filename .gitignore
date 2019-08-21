@@ -5,6 +5,7 @@ output_annotated.txt
 output_annotated.csv
 output.txt
 output.csv
+new_sequence.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

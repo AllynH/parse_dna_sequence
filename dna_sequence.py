@@ -151,10 +151,17 @@ def find_codon_with_index(chunked_sequence, find_codon, requested_sequence, codo
 
 	print("Here is the sequence:", codon_sequence[requested_sequence])
 	print("Here is the start codon:", codon_sequence[requested_sequence]["START"])
-	print("Here is the desired codons index:", int(codon_sequence[requested_sequence]["START"]) + int(find_codon) -1)
+	print("Here is the desired codons index:", codon_index)
 
 	print("Here is the codon", find_codon, "places after sequence", requested_sequence)
 	find_specific_codon(chunked_sequence, codon_index)
+
+	new_sequence = []
+	new_sequence = chunked_sequence[int(codon_sequence[requested_sequence]["START"]):int(codon_index) + 1:1]
+	print("The new sequence is:", new_sequence)
+
+	write_file("new_sequence", new_sequence)
+
 
 	return True
 
@@ -280,9 +287,19 @@ def write_file(file_name, chunked_sequence):
 	"""
 
 	separator = ","
-	file_name = FILE_LIST['OUTPUT_FILE'] + ".csv"
+	file_name = file_name + ".csv"
+
+	print(len(chunked_sequence))
+	# Add 1 because we are counting from 1, not 0:
+	index = list(range(1, len(chunked_sequence) + 1))
+	# print(index)
+
+	print("\t-I- Writing file:", file_name)
 
 	with open(file_name, 'wt') as output:
+		for i in index:
+			output.write(str(i) + separator)
+		output.write("\n")
 		for item in chunked_sequence:
 			output.write(item + separator)
 
